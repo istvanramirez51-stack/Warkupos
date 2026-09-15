@@ -1,0 +1,238 @@
+================================================
+npm run build
+
+php artisan serve --host=0.0.0.0 --port=8000
+
+http://10.216.145.175:8000 PC / MOBILE
+
+================================================
+
+app layout V.1
+<script setup>
+import { ref } from 'vue'
+import { Link } from '@inertiajs/vue3'
+import { LayoutDashboard, UtensilsCrossed, ShoppingCart, Users, ChefHat, ShieldCheck, BarChart3, Settings, LogOut, Menu } from '@lucide/vue'
+
+// State untuk toggle mobile menu (jika dibutuhkan nanti)
+const isMobileMenuOpen = ref(false)
+
+// Contoh menu (nanti akan kita dinamis berdasarkan Role)
+const menuItems = [
+  { name: 'Dashboard', icon: LayoutDashboard, route: 'dashboard' },
+  { name: 'Kasir (POS)', icon: ShoppingCart, route: 'kasir.pos' },
+  { name: 'Dapur', icon: ChefHat, route: 'dapur.queue' },
+  { name: 'Menu', icon: UtensilsCrossed, route: 'owner.menus.index' },
+  { name: 'Audit Trail', icon: ShieldCheck, route: 'owner.audit.index' },
+  { name: 'Laporan', icon: BarChart3, route: 'owner.reports.daily' },
+  { name: 'Pengguna', icon: Users, route: '#' },
+  { name: 'Pengaturan', icon: Settings, route: '#' },
+]
+</script>
+
+<template>
+  <div class="app-layout-container">
+    
+    <!-- SIDEBAR (Desktop & Tablet) -->
+    <aside class="sidebar">
+      <div class="sidebar-inner">
+        <!-- Logo -->
+        <div class="mb-8 px-4 flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style="background-color: var(--ink);">
+            <UtensilsCrossed :size="18" color="white" />
+          </div>
+          <span class="sidebar-label text-lg font-extrabold" style="font-family: var(--font-heading); color: var(--ink); letter-spacing: -0.02em;">WarkuPos</span>
+        </div>
+
+        <!-- Nav Menu -->
+        <nav class="space-y-1 px-2">
+          <Link 
+            v-for="item in menuItems" 
+            :key="item.name" 
+            :href="route(item.route)"
+            class="nav-item"
+          >
+            <component :is="item.icon" :size="20" class="flex-shrink-0" />
+            <span class="sidebar-label">{{ item.name }}</span>
+          </Link>
+        </nav>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="main-content">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="flex items-center gap-3">
+          <button class="md:hidden p-2 rounded-md" style="color: var(--ink-soft);" @click="isMobileMenuOpen = !isMobileMenuOpen">
+            <Menu :size="24" />
+          </button>
+          <h2 class="text-lg font-semibold" style="font-family: var(--font-heading); color: var(--ink-soft);">Halaman Utama</h2>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <span class="text-sm font-medium" style="color: var(--ink-muted);">Owner</span>
+          <!-- Tombol Logout -->
+          <Link :href="route('logout')" method="post" as="button" class="p-2 rounded-md hover:bg-[var(--paper-muted)]" style="color: var(--ink-subtle);">
+            <LogOut :size="20" />
+          </Link>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <div class="p-6">
+        <slot />
+      </div>
+    </main>
+
+    <!-- BOTTOM NAV (Mobile Only) -->
+    <nav class="bottom-nav">
+      <Link v-for="item in menuItems.slice(0, 4)" :key="item.name" :href="route(item.route)" class="bottom-nav-item">
+        <component :is="item.icon" :size="22" />
+        <span class="text-[10px] font-medium mt-1">{{ item.name }}</span>
+      </Link>
+    </nav>
+
+  </div>
+</template>
+
+<style scoped>
+/* Layout Container */
+.app-layout-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--paper);
+}
+
+/* ==========================================
+   SIDEBAR LOGIC (Desktop & Tablet)
+   ========================================== */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 240px; /* Desktop default */
+  background-color: var(--paper-muted);
+  border-right: 1px solid var(--paper-inset);
+  z-index: 30;
+  transition: width 200ms ease;
+}
+
+.sidebar-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding-top: 1.5rem;
+  overflow-y: auto;
+}
+
+/* Tablet: Sidebar mengecil */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .sidebar {
+    width: 64px;
+  }
+  /* Sembunyikan teks di tablet */
+  .sidebar-label {
+    display: none;
+  }
+}
+
+/* Mobile: Sembunyikan sidebar */
+@media (max-width: 640px) {
+  .sidebar {
+    display: none;
+  }
+}
+
+/* Nav Item Style */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-md);
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 200ms, color 200ms;
+}
+.nav-item:hover {
+  background-color: var(--paper-inset);
+  color: var(--ink-soft);
+}
+
+/* ==========================================
+   MAIN CONTENT
+   ========================================== */
+.main-content {
+  flex: 1;
+  margin-left: 240px; /* Desktop default */
+  display: flex;
+  flex-direction: column;
+  transition: margin-left 200ms ease;
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .main-content {
+    margin-left: 64px; /* Tablet sidebar width */
+  }
+}
+
+@media (max-width: 640px) {
+  .main-content {
+    margin-left: 0;
+    margin-bottom: 70px; /* Ruang untuk bottom nav */
+  }
+}
+
+/* ==========================================
+   TOPBAR
+   ========================================== */
+.topbar {
+  height: 64px;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: var(--paper);
+  border-bottom: 1px solid var(--paper-inset);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+/* ==========================================
+   BOTTOM NAV (Mobile)
+   ========================================== */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  background-color: var(--paper-muted);
+  border-top: 1px solid var(--paper-inset);
+  z-index: 30;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 1rem;
+}
+
+@media (max-width: 640px) {
+  .bottom-nav {
+    display: flex;
+  }
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--ink-muted);
+  transition: color 150ms;
+}
+.bottom-nav-item:hover {
+  color: var(--primary);
+}
+</style>

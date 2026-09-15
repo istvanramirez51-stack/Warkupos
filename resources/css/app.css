@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+@source "../../storage/framework/views/*.php";
+@source "../../resources/views/**/*.blade.php";
+@source "../../resources/js/**/*.vue";
+
+@theme {
+    --font-family-sans: "Figtree", ui-sans-serif, system-ui, sans-serif;
+}
+
+@import "./base/tokens.css";
+@import "./components/components.css";
+
+/*
+   Aturan wajib PRD:
+   Semua angka di tabel, harga, qty wajib pakai tabular-nums
+*/
+td, .price, .qty, .stat, .badge {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+   Aturan wajib PRD:
+   Dilarang pakai transition: all (harus spesifik per property)
+*/
+* {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}

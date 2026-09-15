@@ -1,0 +1,130 @@
+/* ==========================================
+   WarkuPos UI Components
+   Wajib pakai token. Dilarang hardcode warna!
+   ========================================== */
+
+/* --- BUTTONS --- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-family: var(--font-body);
+  cursor: pointer;
+  border: none;
+  /* PRD: Dilarang pakai transition: all */
+  transition: background-color 200ms, opacity 200ms, transform 100ms, box-shadow 100ms;
+}
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Sizes */
+.btn-sm { padding: 0.375rem 0.75rem; font-size: 0.875rem; }
+.btn-md { padding: 0.5rem 1rem; font-size: 0.875rem; }
+.btn-lg { padding: 0.75rem 1.5rem; font-size: 1rem; }
+
+/* Variants */
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+  /* PRD: Border 1.5px HANYA pada elemen yang punya brutal shadow */
+  border: 1.5px solid var(--brut-border);
+  /* PRD: Shadow maksimal 2 elemen per halaman */
+  box-shadow: var(--brut-shadow);
+}
+.btn-primary:hover:not(:disabled) { filter: brightness(1.15); }
+/* PRD: Efek tekan brutalism */
+.btn-primary:active:not(:disabled) { 
+  transform: translate(2px, 2px); 
+  box-shadow: 1px 1px 0px var(--brut-border); 
+}
+
+.btn-secondary {
+  background-color: var(--paper-muted);
+  color: var(--ink-soft);
+  border: 1px solid var(--paper-inset);
+}
+.btn-secondary:hover:not(:disabled) { background-color: var(--paper-inset); }
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--ink-muted);
+}
+.btn-ghost:hover:not(:disabled) { background-color: var(--paper-muted); color: var(--ink-soft); }
+
+.btn-danger { background-color: var(--danger); color: white; }
+.btn-danger:hover:not(:disabled) { filter: brightness(1.15); }
+
+.btn-accent { background-color: var(--accent); color: white; }
+.btn-accent:hover:not(:disabled) { filter: brightness(1.15); }
+
+
+/* --- INPUTS --- */
+.input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border-radius: var(--radius-md);
+  outline: none;
+  background-color: var(--paper-inset);
+  color: var(--ink-soft);
+  border: 1px solid transparent;
+  font-family: var(--font-body);
+  /* PRD: Dilarang pakai transition: all */
+  transition: background-color 200ms, border-color 200ms, box-shadow 200ms;
+}
+.input::placeholder { color: var(--ink-subtle); }
+
+/* PRD: Elemen yang boleh pakai brutal shadow: input:focus */
+.input:focus {
+  border: 1.5px solid var(--brut-border);
+  box-shadow: var(--brut-shadow);
+  background-color: var(--paper);
+}
+
+.input--error { 
+  border: 1.5px solid var(--danger) !important; 
+  box-shadow: none !important; /* Tidak shadow jika error */
+}
+
+/* PRD: Angka wajib tabular-nums & JetBrains Mono */
+.input--numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.input-group { position: relative; }
+.input-group .input { padding-left: 2.5rem; }
+.input-group-icon { 
+  position: absolute; 
+  left: 0.75rem; 
+  top: 50%; 
+  transform: translateY(-50%); 
+  color: var(--ink-subtle);
+  pointer-events: none;
+}
+
+
+/* --- CARDS --- */
+.card {
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background-color: var(--paper-muted);
+  border: 1px solid var(--paper-inset);
+  transition: box-shadow 200ms, border-color 200ms, transform 100ms;
+}
+
+/* PRD: Elemen yang boleh pakai brutal shadow: card--active */
+.card--active {
+  border: 1.5px solid var(--brut-border);
+  box-shadow: var(--brut-shadow);
+}
+
+.card--hoverable:hover { box-shadow: var(--shadow-md); }
+
+.card--clickable { cursor: pointer; }
+.card--clickable:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px var(--brut-border);
+}
