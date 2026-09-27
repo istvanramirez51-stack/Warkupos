@@ -117,20 +117,32 @@ const fmt = (n) => 'Rp ' + n.toLocaleString('id-ID')
       </div>
     </div>
 
-    <!-- ================= DAFTAR MENU ================= -->
+        <!-- ================= DAFTAR MENU ================= -->
     <div class="px-4 pt-4">
       <div
         v-for="menu in activeMenus" :key="menu.id"
-        class="flex items-center gap-3 p-3.5 mb-3 rounded-xl cursor-pointer"
+        class="flex items-center gap-3 p-3 mb-3 rounded-xl cursor-pointer overflow-hidden"
         style="background: var(--paper-muted); transition: background-color 200ms;"
         @click="openItem(menu)"
       >
+        <!-- ✅ FOTO MENU (MNU-04) — fallback ikon kalau tidak ada foto -->
+        <div class="w-16 h-16 rounded-lg flex-shrink-0 overflow-hidden flex items-center justify-center"
+             style="background: var(--paper-inset);">
+          <img
+            v-if="menu.image"
+            :src="`/storage/${menu.image}`"
+            :alt="menu.name"
+            class="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <span v-else class="text-2xl">🍽️</span>
+        </div>
+
         <div class="flex-1 min-w-0">
           <div class="font-bold text-sm leading-snug" style="color: var(--ink);">{{ menu.name }}</div>
-          <!-- Harga: biru primary -->
           <div class="text-sm font-semibold mt-1 stat" style="color: var(--primary);">{{ fmt(menu.price) }}</div>
         </div>
-        <!-- Tombol tambah: biru -->
+
         <button
           class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
           style="background: var(--primary);"

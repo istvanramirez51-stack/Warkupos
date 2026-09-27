@@ -1,18 +1,79 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AppLayout from '@/Components/layout/AppLayout.vue'
-import { ShoppingCart, Banknote, QrCode, ArrowLeftRight, Clock } from '@lucide/vue'
+import { ShoppingCart, Banknote, QrCode, ArrowLeftRight, Clock, Printer, MessageCircle } from '@lucide/vue'
 
 defineOptions({ layout: AppLayout })
 
-const props = defineProps({ activeOrders: Array })
+const props = defineProps({
+    activeOrders: Array,
+    receipt: { type: Object, default: null }, // flash dari pay()
+})
 
 const selectedOrder = ref(null)
 const showPayModal = ref(false)
 const method = ref('tunai')
 const paidAmount = ref(0)
 const processing = ref(false)
+
+// ===== Struk (KAS-04) =====
+const showReceiptModal = ref(false)
+const receiptData = ref(null)
+const waPhone = ref('') // nomor HP pelanggan — opsional (PRD 12.3)
+
+// Buka modal struk otomatis setelah pembayaran sukses (flash baru masuk)
+watch(() => props.receipt, (val) => {
+    if (val) {
+        receiptData.value = val
+        showReceiptModal.value = true
+        waPhone.value = ''
+    }
+})
+
+const printReceipt = () => {
+    // Buka tab baru — Blade view auto window.print() (PRD 12.2)
+    window.open(`/kasir/receipts/${receiptData.value.id}/print`, '_blank')
+}
+
+const sendWhatsApp = () => {
+    const d = receiptData.value
+    // Teks plain-text — format sesuai contoh PRD 12.3
+    let text = ''
+    text += `${'='.repeat(28)}\n`
+    text += `${d.warung.name.toUpperCase().padStart(16, ' ').padStart(4)}\n`
+    if (d.warung.address) text += `${d.warung.address}\n`
+    if (d.warung.phone) text += `WA: ${d.warung.phone}\n`
+    text += `${'='.repeat(28)}\n\n`
+    text += `No  : ${d.number}\n`
+    text += `Tgl : ${d.datetime}\n`
+    text += `Meja: ${d.table}  Kasir: ${d.kasir}\n`
+    text += `${'-'.repeat(28)}\n`
+    d.items.forEach(i => {
+        text += `${i.name} x${i.qty}\n`
+        text += `${fmt(i.price)} = ${fmt(i.price * i.qty)}\n`
+    })
+    text += `${'-'.repeat(28)}\n`
+    text += `TOTAL   ${fmt(d.total).padStart(20)}\n`
+    text += `Bayar (${d.method}) ${fmt(d.paid).padStart(9)}\n`
+    text += `Kembali ${fmt(d.change).padStart(20)}\n`
+    text += `${'='.repeat(28)}\n`
+    text += `Terima kasih atas kunjungan\nAnda! Sampai jumpa :)`
+
+    // Nomor pelanggan opsional — kalau kosong, WA terbuka tanpa tujuan (PRD 12.3)
+    const phone = waPhone.value.replace(/[^0-9]/g, '').replace(/^0/, '62')
+    const url = phone
+        ? `https://wa.me/${phone}?text=${encodeURIComponent(text)}`
+        : `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(url, '_blank')
+}
+
+const closeReceipt = () => {
+    showReceiptModal.value = false
+    // Bersihkan flash dengan reload halaman (tanpa flash) — quiet
+    router.reload({ only: ['activeOrders'] })
+    receiptData.value = null
+}
 
 const methodIcons = { tunai: Banknote, qris: QrCode, transfer: ArrowLeftRight }
 const methodLabels = { tunai: 'Tunai', qris: 'QRIS', transfer: 'Transfer' }
@@ -79,7 +140,6 @@ const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
             <span class="font-extrabold text-lg" style="font-family: var(--font-heading); color: var(--ink);">
               {{ order.table_name }}
             </span>
-            <!-- Badge sumber order -->
             <span
               class="text-[10px] font-bold px-2 py-0.5 rounded-full"
               :style="{ backgroundColor: sourceBadge(order.source).bg, color: 'white' }"
@@ -92,7 +152,6 @@ const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
           </span>
         </div>
 
-        <!-- Item ringkas -->
         <div class="text-sm space-y-0.5 mb-3" style="color: var(--ink-soft);">
           <div v-for="(item, i) in order.items.slice(0, 3)" :key="i" class="truncate">
             <span class="font-bold stat">{{ item.qty }}×</span> {{ item.name }}
@@ -128,7 +187,6 @@ const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
           <span class="font-extrabold stat" style="color: var(--primary);">{{ fmt(selectedOrder.total) }}</span>
         </p>
 
-        <!-- Pilih metode -->
         <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color: var(--ink-muted);">Metode Bayar</label>
         <div class="grid grid-cols-3 gap-2 mb-5">
           <button
@@ -145,7 +203,6 @@ const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
           </button>
         </div>
 
-        <!-- Nominal bayar -->
         <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color: var(--ink-muted);">
           Nominal Dibayar
         </label>
@@ -156,7 +213,6 @@ const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
           min="0"
         />
 
-        <!-- Quick cash (untuk tunai) -->
         <div v-if="method === 'tunai'" class="flex flex-wrap gap-2 mb-5">
           <button
             v-for="amount in quickCash" :key="amount"
@@ -171,7 +227,6 @@ const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
           </button>
         </div>
 
-        <!-- Kembalian -->
         <div class="flex items-center justify-between p-4 rounded-xl mb-5" style="background: var(--paper-muted);">
           <span class="font-bold text-sm" style="color: var(--ink);">Kembalian</span>
           <span class="text-xl font-extrabold stat" style="color: var(--primary);">{{ fmt(change) }}</span>
@@ -188,6 +243,89 @@ const fmt = (n) => 'Rp ' + Number(n).toLocaleString('id-ID')
           "
         >
           {{ processing ? 'Memproses...' : 'Proses Pembayaran' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ MODAL STRUK (KAS-04) ============ -->
+    <div
+      v-if="showReceiptModal && receiptData"
+      class="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style="background: rgba(10,10,10,0.5);"
+      @click.self="closeReceipt"
+    >
+      <div
+        class="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 max-h-[90dvh] overflow-y-auto"
+        style="background: var(--paper);"
+      >
+        <!-- Konfirmasi sukses -->
+        <div class="text-center mb-5">
+          <div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center"
+               style="background: var(--primary);">
+            <span class="text-xl text-white font-extrabold">✓</span>
+          </div>
+          <h2 class="text-xl font-extrabold" style="font-family: var(--font-heading); color: var(--ink); letter-spacing: -0.02em;">
+            Pembayaran Berhasil
+          </h2>
+          <p class="text-sm stat mt-1" style="color: var(--ink-muted);">
+            {{ receiptData.number }} — Kembalian
+            <span class="font-bold" style="color: var(--primary);">{{ fmt(receiptData.change) }}</span>
+          </p>
+        </div>
+
+        <!-- Ringkasan struk -->
+        <div class="rounded-xl p-4 mb-5 text-sm" style="background: var(--paper-muted);">
+          <div v-for="(item, i) in receiptData.items" :key="i"
+               class="flex justify-between py-1"
+               style="border-bottom: 1px dashed var(--paper-inset);">
+            <span style="color: var(--ink);">
+              <span class="font-bold stat">{{ item.qty }}×</span> {{ item.name }}
+            </span>
+            <span class="stat" style="color: var(--ink-soft);">{{ fmt(item.price * item.qty) }}</span>
+          </div>
+          <div class="flex justify-between pt-2 font-extrabold">
+            <span style="color: var(--ink);">Total</span>
+            <span class="stat" style="color: var(--primary);">{{ fmt(receiptData.total) }}</span>
+          </div>
+        </div>
+
+        <!-- No HP pelanggan — opsional (PRD 12.3) -->
+        <label class="block text-xs font-bold uppercase tracking-wider mb-2" style="color: var(--ink-muted);">
+          No. HP Pelanggan (opsional — untuk WhatsApp)
+        </label>
+        <input
+          v-model="waPhone"
+          type="tel"
+          class="input w-full mb-5 stat"
+          placeholder="0812xxxx — kosongkan untuk pilih manual"
+        />
+
+        <!-- Tombol aksi struk -->
+        <div class="grid grid-cols-2 gap-3 mb-3">
+          <button
+            @click="printReceipt"
+            class="py-4 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2"
+            style="background: var(--primary); color: white; border: 1.5px solid var(--brut-border); box-shadow: var(--brut-shadow);"
+          >
+            <Printer :size="18" />
+            Cetak Struk
+          </button>
+          <button
+            @click="sendWhatsApp"
+            class="py-4 rounded-xl font-extrabold text-sm flex items-center justify-center gap-2"
+            style="background: var(--ink); color: white;"
+          >
+            <MessageCircle :size="18" />
+            WhatsApp
+          </button>
+        </div>
+
+        <button
+          @click="closeReceipt"
+          class="w-full py-3 rounded-xl font-bold text-sm"
+          style="background: var(--paper-muted); color: var(--ink-soft);"
+        >
+          Selesai
         </button>
       </div>
     </div>

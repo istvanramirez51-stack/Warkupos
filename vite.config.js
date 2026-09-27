@@ -8,7 +8,7 @@ export default defineConfig({
         host: '0.0.0.0',          // ✅ dengarkan di semua interface jalakan command ini 
                                     // ( php artisan serve --host=0.0.0.0 --port=8000 lalu untuk browser gunaka ini http://localhost:8000 > untuk mobile tinggal scan qr dan kalau akses sistem pos gunakan localhost 8000)
         hmr: {
-            host: '10.216.145.175', // ✅ IP LAN komputer kamu — supaya hot reload jalan dari HP
+            host: '10.103.15.175', // ✅ IP LAN komputer kamu — supaya hot reload jalan dari HP
         },
     },
     plugins: [

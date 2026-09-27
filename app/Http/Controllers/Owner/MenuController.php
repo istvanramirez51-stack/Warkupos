@@ -36,20 +36,23 @@ class MenuController extends Controller
     }
 
     public function update(StoreMenuRequest $request, Menu $menu)
-    {
-        $data = $request->validated();
+{
+    $data = $request->validated();
 
-        // PROSES UPLOAD GAMBAR BARU (dan hapus yang lama)
-        if ($request->hasFile('image')) {
-            if ($menu->image) {
-                Storage::disk('public')->delete($menu->image);
-            }
-            $data['image'] = $request->file('image')->store('menus', 'public');
+    if ($request->hasFile('image')) {
+        // Upload baru: hapus file lama, simpan yang baru
+        if ($menu->image) {
+            Storage::disk('public')->delete($menu->image);
         }
-
-        $menu->update($data);
-        return redirect()->back()->with('success', 'Menu berhasil diperbarui');
+        $data['image'] = $request->file('image')->store('menus', 'public');
+    } else {
+        // ✅ FIX: tidak ada upload baru → JANGAN sentuh kolom image
+        unset($data['image']);
     }
+
+    $menu->update($data);
+    return redirect()->back()->with('success', 'Menu berhasil diperbarui');
+}
 
     public function destroy(Menu $menu)
     {

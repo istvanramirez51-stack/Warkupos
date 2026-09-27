@@ -1,52 +1,82 @@
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AppLayout from '@/Components/layout/AppLayout.vue'
 import { usePoll } from '@/composables/usePoll'
-import { ChefHat, Clock, Wifi, WifiOff, Play, CheckCircle2, StickyNote } from '@lucide/vue'
+import { useOrderSound } from '@/composables/useOrderSound'
+import { ChefHat, Clock, Wifi, WifiOff, Play, CheckCircle2, StickyNote, Volume2 } from '@lucide/vue'
 
 defineOptions({ layout: AppLayout })
 
 const props = defineProps({ orders: Array })
 
-// Polling 5 detik — refresh hanya prop 'orders' (PRD 13)
+// ===== Polling (PRD 13) — refresh hanya prop 'orders' tiap 5 detik =====
 const { isConnected } = usePoll(['orders'], 5000)
 
+// ===== Notifikasi bunyi (PRD DPR-04) =====
+const { detectNewOrders, initAudioUnlock, testSound } = useOrderSound()
+
+// Unlock audio saat interaksi pertama di halaman ini (kebijakan autoplay browser)
+initAudioUnlock()
+
+// Setiap polling selesai memperbarui 'orders' → deteksi order baru → bunyi
+watch(() => props.orders, (newOrders) => {
+    console.log('🔍 orders berubah, total:', newOrders?.length)
+    detectNewOrders(newOrders)
+})
+
+// ===== Data computed =====
 const pendingOrders = computed(() => props.orders.filter(o => o.status === 'pending'))
 const processingOrders = computed(() => props.orders.filter(o => o.status === 'diproses'))
 
+// ===== Aksi =====
 const setStatus = (order, status) => {
     router.post(`/dapur/orders/${order.id}/status`, { status }, { preserveScroll: true })
 }
 
-// Animasi highlight order baru — pola wkp-motion.highlight (PRD 9.1)
-// Untuk MVP: kartu pending diberi border berbeda agar menonjol
-const fmtTime = (t) => t
+const handleTestSound = () => {
+    console.log('🔊 Test suara diklik')
+    testSound()
+}
 </script>
 
 <template>
   <div>
-    <!-- Header + indikator koneksi (DPR-03) -->
-    <div class="flex items-center justify-between mb-6 gap-4">
+    <!-- Header + indikator koneksi (DPR-03) + test suara (DPR-04) -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
       <div>
         <h1 class="text-3xl font-extrabold flex items-center gap-2"
             style="font-family: var(--font-heading); color: var(--ink); letter-spacing: -0.03em;">
           <ChefHat :size="28" />
           Dapur — Antrian Pesanan
         </h1>
-        <p class="text-sm mt-1" style="color: var(--ink-muted);">Auto-refresh setiap 5 detik</p>
+        <p class="text-sm mt-1" style="color: var(--ink-muted);">
+          Auto-refresh setiap 5 detik — 🔔 suara aktif setelah klik pertama di halaman ini
+        </p>
       </div>
 
-      <!-- Badge koneksi: hijau/merah (PRD DPR-03) -->
-      <div
-        class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
-        :style="isConnected
-            ? 'background: var(--success); color: white;'
-            : 'background: var(--danger); color: white;'"
-        style="transition: background-color 200ms;"
-      >
-        <component :is="isConnected ? Wifi : WifiOff" :size="14" />
-        {{ isConnected ? 'Terhubung' : 'Koneksi Terputus' }}
+      <div class="flex items-center gap-2">
+        <!-- Tombol Test Suara — untuk cek speaker saat setup warung -->
+        <button
+          @click="handleTestSound"
+          class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
+          style="background: var(--paper-muted); color: var(--ink-muted); transition: background-color 200ms;"
+        >
+          <Volume2 :size="14" />
+          Test Suara
+        </button>
+
+        <!-- Badge koneksi: hijau/merah (PRD DPR-03) -->
+        <div
+          class="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold"
+          :style="isConnected
+              ? 'background: var(--success); color: white;'
+              : 'background: var(--danger); color: white;'"
+          style="transition: background-color 200ms;"
+        >
+          <component :is="isConnected ? Wifi : WifiOff" :size="14" />
+          {{ isConnected ? 'Terhubung' : 'Koneksi Terputus' }}
+        </div>
       </div>
     </div>
 
@@ -55,7 +85,7 @@ const fmtTime = (t) => t
       <p class="text-5xl mb-4">🍳</p>
       <p class="font-bold" style="color: var(--ink);">Tidak ada pesanan</p>
       <p class="text-sm mt-1" style="color: var(--ink-muted);">
-        Pesanan baru akan muncul otomatis dalam ≤ 5 detik
+        Pesanan baru akan muncul otomatis dalam ≤ 5 detik — dengan bunyi notifikasi
       </p>
     </div>
 

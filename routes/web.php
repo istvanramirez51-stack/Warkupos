@@ -66,6 +66,7 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware('role:kasir,owner')->prefix('kasir')->name('kasir.')->group(function () {
         Route::get('/pos', [KasirController::class, 'pos'])->name('pos');
         Route::post('/orders/{order}/pay', [KasirController::class, 'pay'])->name('orders.pay');
+        Route::get('/receipts/{transaction}/print', [KasirController::class, 'printReceipt'])->name('receipts.print');
     });
 
     // --- ROUTE PELAYAN ---
