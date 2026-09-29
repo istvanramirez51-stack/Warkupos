@@ -2,7 +2,7 @@
 import AppLayout from '@/Components/layout/AppLayout.vue'
 import WCard from '@/Components/ui/WCard.vue'
 import WBtn from '@/Components/ui/WBtn.vue'
-import { UtensilsCrossed, LayoutGrid, Armchair } from '@lucide/vue'
+import { UtensilsCrossed, LayoutGrid, Armchair, AlertTriangle } from '@lucide/vue'
 
 defineOptions({ layout: AppLayout })
 
@@ -15,6 +15,10 @@ const props = defineProps({
     warung: { 
         type: Object, 
         default: () => ({ name: 'WarkuPos', is_open: false }) 
+    },
+    lowStockIngredients: { 
+        type: Array, 
+        default: () => [] 
     }
 })
 </script>
@@ -29,6 +33,28 @@ const props = defineProps({
       <p class="mt-1 text-sm" style="color: var(--ink-muted);">
         Selamat datang, <span class="font-semibold" style="color: var(--ink-soft);">{{ warung.name }}</span>
       </p>
+    </div>
+
+    <!-- ✅ ALERT STOK KRITIS (STK-03) — muncul hanya jika ada bahan kritis -->
+    <div
+      v-if="lowStockIngredients.length > 0"
+      class="mb-6 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+      style="background: rgba(214, 59, 59, 0.08); border: 1.5px solid var(--danger);"
+    >
+      <div class="flex items-center gap-3 min-w-0">
+        <AlertTriangle :size="20" style="color: var(--danger); flex-shrink: 0;" />
+        <span class="text-sm font-bold" style="color: var(--danger);">
+          {{ lowStockIngredients.length }} bahan stok kritis:
+          {{ lowStockIngredients.map(i => i.name).join(', ') }}
+        </span>
+      </div>
+      <a
+        :href="route('owner.stock.index')"
+        class="text-xs font-bold px-3 py-2 rounded-lg flex-shrink-0 text-center"
+        style="background: var(--danger); color: white;"
+      >
+        Lihat Stok
+      </a>
     </div>
 
     <!-- Grid Statistik -->

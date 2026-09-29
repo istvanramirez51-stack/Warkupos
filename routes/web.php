@@ -11,6 +11,7 @@ use App\Http\Controllers\Kasir\KasirController;
 use App\Http\Controllers\Dapur\DapurController;
 use App\Http\Controllers\Owner\AuditController;
 use App\Http\Controllers\Owner\ReportController;
+use App\Http\Controllers\Owner\StockController;
 use Illuminate\Support\Facades\Route;
 
 // ==========================================================
@@ -60,7 +61,14 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/reports/daily', [ReportController::class, 'daily'])->name('reports.daily');
         Route::get('/reports/monthly', [ReportController::class, 'monthly'])->name('reports.monthly');
-    });
+
+         // STOK BAHAN BAKU
+        Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
+        Route::post('/stock', [StockController::class, 'store'])->name('stock.store');
+        Route::post('/stock/{ingredient}/stock', [StockController::class, 'updateStock'])->name('stock.update-stock');
+        Route::put('/stock/{ingredient}', [StockController::class, 'update'])->name('stock.update');
+        Route::delete('/stock/{ingredient}', [StockController::class, 'destroy'])->name('stock.destroy');
+        });
 
     // --- ROUTE KASIR ---
     Route::middleware('role:kasir,owner')->prefix('kasir')->name('kasir.')->group(function () {

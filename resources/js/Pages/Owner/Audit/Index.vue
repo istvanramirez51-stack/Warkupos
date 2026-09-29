@@ -1,6 +1,7 @@
 <script setup>
+import { ref } from 'vue'
 import AppLayout from '@/Components/layout/AppLayout.vue'
-import { ShieldCheck, ChevronDown } from '@lucide/vue'
+import { ShieldCheck, ChevronDown, LayoutGrid, List } from '@lucide/vue'
 
 defineOptions({ layout: AppLayout })
 
@@ -12,15 +13,18 @@ const actionConfig = {
     'transaction.created':  { label: 'Pembayaran',   bg: 'var(--ink)' },
 }
 
+// View mode: list (mobile default) / table (desktop)
+const viewMode = ref(window.innerWidth >= 768 ? 'table' : 'list')
+
 const fmtTime = (t) => new Date(t).toLocaleString('id-ID', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
 })
 </script>
 
 <template>
-  <div>
+  <div class="w-full overflow-x-hidden">
     <div class="mb-6">
-      <h1 class="text-3xl font-extrabold flex items-center gap-2"
+      <h1 class="text-2xl sm:text-3xl font-extrabold flex items-center gap-2"
           style="font-family: var(--font-heading); color: var(--ink); letter-spacing: -0.03em;">
         <ShieldCheck :size="26" />
         Audit Trail
@@ -30,25 +34,99 @@ const fmtTime = (t) => new Date(t).toLocaleString('id-ID', {
       </p>
     </div>
 
-    <!-- Filter aksi -->
-    <div class="flex flex-wrap gap-2 mb-4">
+    <!-- Filter aksi — chips scroll horizontal di mobile -->
+    <div class="flex gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
       <a
         :href="route('owner.audit.index')"
-        class="px-3 py-1.5 rounded-full text-xs font-bold"
+        class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap flex-shrink-0"
         :style="!filters.action ? 'background: var(--primary); color: white;' : 'background: var(--paper-muted); color: var(--ink-muted);'"
         style="transition: background-color 200ms, color 200ms;"
       >Semua</a>
       <a
         v-for="(cfg, action) in actionConfig" :key="action"
         :href="route('owner.audit.index', { action })"
-        class="px-3 py-1.5 rounded-full text-xs font-bold"
+        class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap flex-shrink-0"
         :style="filters.action === action ? 'background: var(--primary); color: white;' : 'background: var(--paper-muted); color: var(--ink-muted);'"
         style="transition: background-color 200ms, color 200ms;"
       >{{ cfg.label }}</a>
     </div>
 
-    <!-- Tabel log -->
-    <div style="background: var(--paper); border: 1px solid var(--paper-inset); border-radius: 12px; overflow: hidden;">
+    <!-- Toggle view — hanya mobile -->
+    <div class="flex md:hidden mb-4">
+      <div class="grid grid-cols-2 w-full rounded-xl overflow-hidden" style="border: 1px solid var(--paper-inset);">
+        <button
+          @click="viewMode = 'list'"
+          class="py-2.5 text-xs font-bold flex items-center justify-center gap-1.5"
+          :style="viewMode === 'list'
+            ? 'background: var(--primary); color: white;'
+            : 'background: var(--paper-muted); color: var(--ink-muted);'"
+          style="transition: background-color 200ms, color 200ms;"
+        >
+          <List :size="14" /> Kartu
+        </button>
+        <button
+          @click="viewMode = 'table'"
+          class="py-2.5 text-xs font-bold flex items-center justify-center gap-1.5"
+          :style="viewMode === 'table'
+            ? 'background: var(--primary); color: white;'
+            : 'background: var(--paper-muted); color: var(--ink-muted);'"
+          style="transition: background-color 200ms, color 200ms;"
+        >
+          <LayoutGrid :size="14" /> Tabel
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ VIEW KARTU (Mobile) ============ -->
+    <div v-if="viewMode === 'list'" class="space-y-3">
+      <div
+        v-for="log in logs.data" :key="log.id"
+        class="rounded-xl p-4"
+        style="background: var(--paper); border: 1px solid var(--paper-inset);"
+      >
+        <!-- Baris atas: badge aksi + waktu -->
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <span
+            class="text-[10px] font-bold px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0"
+            :style="{ backgroundColor: (actionConfig[log.action]?.bg ?? 'var(--ink-muted)'), color: 'white' }"
+          >
+            {{ actionConfig[log.action]?.label ?? log.action }}
+          </span>
+          <span class="text-xs stat whitespace-nowrap" style="color: var(--ink-muted);">
+            {{ fmtTime(log.created_at) }}
+          </span>
+        </div>
+
+        <!-- Oleh -->
+        <div class="text-sm font-bold" style="color: var(--ink-soft);">
+          {{ log.user?.name ?? 'Pelanggan (QR)' }}
+        </div>
+
+        <!-- Meta ringkas (jika ada) — tanpa perlu expand -->
+        <div v-if="log.meta" class="mt-2">
+          <details class="group">
+            <summary class="cursor-pointer text-xs font-bold flex items-center gap-1" style="color: var(--primary);">
+              <ChevronDown :size="13" class="group-open:rotate-180" style="transition: transform 200ms;" />
+              Lihat Detail
+            </summary>
+            <pre class="text-[11px] mt-2 p-3 rounded-lg overflow-x-auto"
+                 style="background: var(--paper-muted); color: var(--ink-soft);">{{ JSON.stringify(log.meta, null, 2) }}</pre>
+          </details>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div v-if="logs.data.length === 0" class="text-center py-12">
+        <p class="text-4xl mb-3">📜</p>
+        <p class="text-sm" style="color: var(--ink-subtle);">Belum ada log. Lakukan order/pembayaran untuk menghasilkan log.</p>
+      </div>
+    </div>
+
+    <!-- ============ VIEW TABEL (Desktop) ============ -->
+    <div
+      v-if="viewMode === 'table'"
+      style="background: var(--paper); border: 1px solid var(--paper-inset); border-radius: 12px; overflow: hidden;"
+    >
       <table class="w-full text-sm">
         <thead>
           <tr style="border-bottom: 1.5px solid var(--paper-inset); background: var(--paper-muted);">
@@ -94,11 +172,11 @@ const fmtTime = (t) => new Date(t).toLocaleString('id-ID', {
       </table>
     </div>
 
-    <!-- Pagination -->
-    <div v-if="logs.last_page > 1" class="flex gap-2 mt-4 justify-center">
+    <!-- Pagination — scroll-x kalau halaman banyak -->
+    <div v-if="logs.last_page > 1" class="flex gap-2 mt-4 justify-center overflow-x-auto pb-1">
       <a v-for="n in logs.last_page" :key="n"
          :href="route('owner.audit.index', { page: n, ...filters })"
-         class="px-3 py-1.5 rounded-lg text-xs font-bold"
+         class="px-3 py-1.5 rounded-lg text-xs font-bold flex-shrink-0"
          :style="n === logs.current_page ? 'background: var(--primary); color: white;' : 'background: var(--paper-muted); color: var(--ink-muted);'"
       >{{ n }}</a>
     </div>

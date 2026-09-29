@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use App\Models\Table;
 use App\Models\Setting;
+use App\Models\Ingredient;
 use Inertia\Inertia;
 
 class DashboardController extends Controller
@@ -22,6 +23,11 @@ class DashboardController extends Controller
         $warungName = Setting::where('key', 'warung_name')->first()?->value ?? 'WarkuPos';
         $isOpen = Setting::where('key', 'is_open')->first()?->value === '1';
 
+        // ✅ BARU (STK-03): bahan yang stoknya kritis (stok <= batas minimum)
+        $lowStockIngredients = Ingredient::whereColumn('stock_qty', '<=', 'min_stock')
+            ->orderBy('stock_qty')
+            ->get();
+
         return Inertia::render('Owner/Dashboard', [
             'stats' => [
                 'totalMenus' => $totalMenus,
@@ -32,7 +38,8 @@ class DashboardController extends Controller
             'warung' => [
                 'name' => $warungName,
                 'is_open' => $isOpen,
-            ]
+            ],
+            'lowStockIngredients' => $lowStockIngredients,
         ]);
     }
 }
